@@ -6,9 +6,11 @@ const Page: NextPage = () => {
   return (
     <div className=" h-screen ">
       <div className=" container flex w-full h-full justify-center items-center">
-        <Card className=" max-w-3xl w-full">
+        <Card className=" max-w-xl w-full">
           <CardHeader>
-            <h1 className=" text-2xl font-semibold">Se connecter</h1>
+            <h1 className=" text-2xl text-center font-semibold">
+              Se connecter
+            </h1>
           </CardHeader>
           <CardContent>
             <LoginForm />
