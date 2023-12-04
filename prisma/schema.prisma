@@ -1,0 +1,42 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+
+model Petition {
+  id               String @id @unique @default(cuid())
+  serial_number    Int
+  title            String
+  type             String
+  base_sector      String
+  petition_content String
+  sector           String
+  sn_date_petition  Json?
+}
+
+model Users {
+  id       String @id @unique @default(cuid())
+  userName String @unique
+  firstName String
+  lastName String
+  password String
+  role     String
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  }
+
+model Reception {
+  id Int @id @unique @default(autoincrement())
+  firstAndLastName String
+  date DateTime  @db.Timestamptz(3)
+  count Int @default(1)
+  complaintType String?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+}

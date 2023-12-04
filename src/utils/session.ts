@@ -14,19 +14,22 @@ export default interface User {
 }
 // Define permissions as string literals
 type Permission = "READ" | "WRITE" | "DELETE";
+// Define jobs as string literals
+
+
 // Define roles with associated permissions
 type Role = {
   name: string;
   permissions: Permission[];
 };
 // Define a set of roles
-type Roles = {
+interface Roles {
   ADMIN: Role;
   EDITOR: Role;
   VIEWER: Role;
-};
+}
 // Roles with associated permissions
-const roles: Roles = {
+export const roles: Roles = {
   ADMIN: {
     name: "admin",
     permissions: ["READ", "WRITE", "DELETE"],
@@ -40,3 +43,5 @@ const roles: Roles = {
     permissions: ["READ"],
   },
 };
+
+
