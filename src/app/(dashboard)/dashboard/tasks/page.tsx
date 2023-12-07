@@ -1,5 +1,5 @@
-import { AddPlaintForm } from "@/components/forms/add-plaint";
 import { PageHeader } from "@/components/pageHeader";
+import ReceptionTable from "@/components/table/task/table-component";
 import { NextPage } from "next";
 
 interface Props {}
@@ -7,8 +7,8 @@ interface Props {}
 const Page: NextPage<Props> = ({}) => {
   return (
     <>
-      <PageHeader title="تقديم شكوى" desc="مضمون الشكوى" />
-      <AddPlaintForm />
+      <PageHeader title="مهامي" desc="" />
+      <ReceptionTable />
     </>
   );
 };
