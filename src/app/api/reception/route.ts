@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { z } from "zod";
 import { prisma } from "../../../../prisma/script";
 import { NextResponse } from "next/server";
+import { receptionType } from "@/types";
 
 export async function POST(request: Request) {
   const session = await getIronSession<IronSessionData>(
@@ -14,15 +15,10 @@ export async function POST(request: Request) {
   if (!session.user) {
     return new NextResponse("Uauthenticated", { status: 401 });
   }
-  const info = z.object({
-    firstName: z.string().min(2),
-    lastName: z.string().min(2),
-    date: z.string(),
-    type: z.string().optional(),
-  });
-  const body: Zod.infer<typeof info> = await request.json();
+
+  const body: Zod.infer<typeof receptionType> = await request.json();
   try {
-    const parsebody = info.parse(body);
+    const parsebody = receptionType.parse(body);
   } catch (e) {
     return new NextResponse(`Fields are require ${e}`, { status: 400 });
   }
@@ -30,16 +26,27 @@ export async function POST(request: Request) {
     // check if already submitied a complaint
     const reception = await prisma.reception.findFirst({
       where: {
-        firstAndLastName: `${body.firstName} ${body.lastName}`,
+        fullName: {
+          equals: body.fullName,
+        },
       },
     });
+
     if (!reception) {
-      // create a new complaint
+      const { date, note, ...restData } = body; // create a new complaint
       const createNewReception = await prisma.reception.create({
         data: {
-          firstAndLastName: `${body.firstName} ${body.lastName}`,
-          date: body.date,
-          complaintType: body.type,
+          ...restData,
+          visited: {
+            createMany: {
+              data: [
+                {
+                  date: date,
+                  note: note,
+                },
+              ],
+            },
+          },
         },
       });
       if (createNewReception) {
@@ -55,9 +62,19 @@ export async function POST(request: Request) {
           id: reception.id,
         },
         data: {
-          count: reception.count + 1,
+          visited: {
+            createMany: {
+              data: [
+                {
+                  date: body.date,
+                  note: body.note,
+                },
+              ],
+            },
+          },
         },
       });
+
       return new NextResponse("updated successfuly", { status: 200 });
     }
   } catch (e) {

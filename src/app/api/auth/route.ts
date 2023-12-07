@@ -44,10 +44,10 @@ export async function POST(request: Request) {
     }
 
     session.user = {
-      userID: "qsdqsdq",
+      userID: getUser.id,
       role: roles.ADMIN,
-      firstName: "smail",
-      lastName: "bakhti",
+      firstName: getUser.firstName,
+      lastName: getUser.lastName,
       isAuthenticated: true,
     };
     await session.save();
