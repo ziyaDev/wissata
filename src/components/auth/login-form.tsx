@@ -11,19 +11,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader } from "lucide-react";
 import { toast } from "../ui/use-toast";
-async function updateUser(
-  url: string,
-  {
-    arg,
-  }: {
-    arg: {
-      userName: string;
-      password: string;
-    };
-  }
-) {
-  await axios.post(url, arg).then((response) => response.data);
-}
+ 
 const LoginForm = () => {
   const [isMutating, setIsMutating] = useState<boolean>();
   const router = useRouter();
@@ -39,6 +27,7 @@ const LoginForm = () => {
         description: "An error occurred",
       });
       console.log(err);
+      setIsMutating(false);
     }
   }
   return (
@@ -58,7 +47,7 @@ const LoginForm = () => {
                 {({ value, setValue, onBlur, errors }) => {
                   return (
                     <div className=" space-y-3">
-                      <Label>Nom d{"`"}utilisateur: </Label>
+                      <Label>اسم المستخدم:</Label>
                       <Input
                         value={value}
                         onBlur={onBlur}
@@ -79,12 +68,11 @@ const LoginForm = () => {
                 {({ value, setValue, onBlur, errors }) => {
                   return (
                     <div className=" space-y-3">
-                      <Label>Mot de passe:</Label>
+                      <Label>كلمة السر:</Label>
                       <Input
                         value={value}
                         onBlur={onBlur}
                         onChange={(e) => setValue(e.target.value)}
-                        placeholder={"Password"}
                         type="password"
                       />
                       {errors.map((error) => (
@@ -99,7 +87,7 @@ const LoginForm = () => {
               {isMutating ? (
                 <Loader className=" h-6 w-6 animate-spin" />
               ) : (
-                "Connecter"
+                "تسجيل الدخول"
               )}
             </Button>
           </div>

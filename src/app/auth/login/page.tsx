@@ -9,7 +9,7 @@ const Page: NextPage = () => {
         <Card className=" max-w-xl w-full">
           <CardHeader>
             <h1 className=" text-2xl text-center font-semibold">
-              Se connecter
+              سجل الدخول في حسابك
             </h1>
           </CardHeader>
           <CardContent>

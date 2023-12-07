@@ -1,7 +1,7 @@
 import { PrismaClient } from "@prisma/client";
-/*
-const prisma = new PrismaClient({
 
+
+const prisma = new PrismaClient({
   log: [
     { level: "warn", emit: "event" },
     { level: "info", emit: "event" },
@@ -20,11 +20,14 @@ prisma.$on("info", (e) => {
 prisma.$on("error", (e) => {
   console.log(e);
 });
-*/
+/*
 
 const prisma = new PrismaClient();
+*/
 async function main() {
-  const countUsers = await prisma.users.count({});
+  try {
+    const countUsers = await prisma.users.count();
+  } catch (err) {}
 }
 
 main()

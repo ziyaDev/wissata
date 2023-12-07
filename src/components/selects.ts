@@ -1,5 +1,5 @@
 const typePlaint = {
-  normalCen: "شعص طبيعي",
+  normalCen: "شخص طبيعي",
   publicService: "خدمة عمومية",
 };
 
