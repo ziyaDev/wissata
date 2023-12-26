@@ -9,7 +9,7 @@ const RootProvider = ({ children }: PropsWithChildren) => {
     <ThemeProvider defaultTheme="system" enableSystem attribute="class">
       <SWRConfig
         value={{
-          refreshInterval: 10000,
+          refreshInterval: 20000,
           fetcher: (resource, init) =>
             fetch(resource, init).then((res) => res.json()),
         }}>

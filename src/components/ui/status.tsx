@@ -18,14 +18,14 @@ const TaskStatus = ({
     case "complete":
       return (
         <div className=" flex gap-2 items-center ">
-          <CheckCircle2 className=" h-4 w-4  text-green " />
+          <CheckCircle2 className=" h-4 w-4    text-green-600 " />
           تم الانتهاء
         </div>
       ); // Add content for "complete" case
     case "processing":
       return (
         <div className=" flex gap-2 items-center  ">
-          <History className="  h-4 w-4" />
+          <History className="  h-4 w-4 text-orange-600 " />
           قيد المعالجة
         </div>
       ); // Add content for "processing" case

@@ -25,6 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { DataTablePagination } from "./data-table-pignation";
+import Image from "next/image";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -109,7 +110,15 @@ export function DataTable<TData, TValue>({
                 <TableCell
                   colSpan={columns.length}
                   className="h-24 text-center">
-                  No results.
+                  <div className="  flex-1   h-full w-full">
+                    <Image
+                      className=" mx-auto py-3"
+                      src={"/no-data.svg"}
+                      alt="no data"
+                      height={600}
+                      width={300}
+                    />
+                  </div>
                 </TableCell>
               </TableRow>
             )}

@@ -14,18 +14,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-
-model Petition {
-  id               String @id @unique @default(cuid())
-  serial_number    Int
-  title            String
-  type             String
-  base_sector      String
-  petition_content String
-  sector           String
-  sn_date_petition  Json?
-}
-
 model Users {
   id       String @id @unique @default(cuid())
   userName String @unique
@@ -36,21 +24,28 @@ model Users {
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   }
 
+
 model Reception {
   id Int @id @unique @default(autoincrement())
   fullName String
-  visited Visit[]
   docNumber String?
-  grades String 
+  grades String
   town String
   city String
-  petitionHasFiled  Boolean @default(false)
-  sector  String?
+  note String?
+  petitionHasFiled Boolean
+  gradesType   String?
+  sector String?
   unstutation String?
   subject String?
+  ministry String
+  typePlaint String?
+  subjectPlaint String?
+  submited   Boolean @default(false)
+  visited Visit[]
   createdAt DateTime @default(now()) @db.Timestamptz(3)
-  submited Boolean @default(false)
 }
+ 
 model Visit {
   id Int @id @unique @default(autoincrement())
   reception   Reception @relation(fields: [receptionId], references: [id])
@@ -68,5 +63,41 @@ model Tasks {
   finishedAt DateTime? @db.Timestamptz(3)
   status  String @default("pending")
   createdAt DateTime @default(now()) @db.Timestamptz(3)
+}
+
+
+model Plainte {
+  id               String @id @unique @default(cuid())
+  fullName    String
+  city            String
+  town             String
+  ministry      String
+  unstutation String?
+  typePlaint           String?
+  subjectPlaint String?
+  grades String
+  sourcePlaint String?
+  correspondenceNumber String
+  gradesType   String?
+  correspondenceDate   DateTime @default(now()) @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  filesRelated    String?
+  recipients  PlainteRecipients[]
+
+}
+
+model PlainteRecipients {
+    id               String @id @unique @default(cuid())
+  plainte   Plainte @relation(fields: [plainteId], references: [id])
+  plainteId String
+
+   sector String?
+      reciption String?
+      town String?
+      save Boolean?
+
+
+  @@index([plainteId])
 }
 

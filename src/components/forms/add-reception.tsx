@@ -9,6 +9,8 @@ import { CalendarIcon, Loader } from "lucide-react";
 import { Calendar } from "../ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import {
   Select,
   SelectContent,
@@ -21,37 +23,58 @@ import {
 import { useState } from "react";
 import axios from "axios";
 import { toast } from "../ui/use-toast";
-import { receptionType, validateField } from "@/types";
-import { typePlaint } from "../selects";
+import {
+  SifatData,
+  WissataTypeSchemadata,
+  dairaData,
+  receptionType,
+} from "@/types";
+import { useRouter } from "next/navigation";
+import { Checkbox } from "../ui/checkbox";
 
 export const ReceptionForm = () => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [selectedWizara, setSelectedWizara] = useState<string | null>(null);
+  const [selectedInstitutions, setSelectedInstitutions] = useState<
+    string | null
+  >(null);
+  const [selectedTypePlaint, setSelectedTypePlaint] = useState<string | null>(
+    null
+  );
+  const [selectedGrades, setSelectedGrades] = useState<string | null>(null);
+  const router = useRouter();
+  const [selectedDaira, setSelectedDaira] = useState<string | null>(null);
+  const filteredGrades = SifatData.filter(
+    (item) => item.name === selectedGrades
+  ).flatMap((item) => item.association);
+  const filteredInstitutions = WissataTypeSchemadata.filter(
+    (item) => item.wizara === selectedWizara
+  ).flatMap((item) => item.institution);
+  const filteredTypePlaint = filteredInstitutions
+    .filter((item) => item.name === selectedInstitutions)
+    .flatMap((item) => item.mawdo3);
+  const filteredPlaints = filteredTypePlaint
+    .filter((item) => item.naw3arida === selectedTypePlaint)
+    .flatMap((item) => item.mawdo3s);
+  const filteredBaladiya = dairaData
+    .filter((item) => item.name === selectedDaira)
+    .flatMap((item) => item.baladiya);
+
   const handleSubmit = async (values: any) => {
     setIsSubmitting(true);
     try {
       await axios.post("/api/reception", values).then((response) => {
-        if (response.status === 200) {
-          return toast({
-            title: "تم بنجاح",
-            description: "طلبك قيد المعالجة",
-          });
-        } else if (response.status === 201) {
-          return toast({
-            title: "تم بنجاح",
-            description: "تم تقديم الشكوى",
-          });
-        }
+        router.push("/dashboard/reception");
       });
     } catch (error) {
-      setIsSubmitting(false);
-
       return toast({
-        title: "Error",
-        description: JSON.stringify(error),
+        title: "حدث خطأ ",
+        description: "الرجاء اعد المحاولة",
       });
     }
     setIsSubmitting(false);
   };
+
   return (
     <div className=" flex justify-center  h-full ">
       <Form<any>
@@ -65,8 +88,8 @@ export const ReceptionForm = () => {
               e.preventDefault();
               submit();
             }}>
-            <div className="  grid grid-cols-3 gap-y-4 gap-x-3">
-              <Field<string>
+            <div className="  grid lg:grid-cols-3 gap-y-4 gap-x-3">
+              <Field
                 name="fullName"
                 onBlurValidate={receptionType.shape.fullName}>
                 {({ value, setValue, onBlur, errors }) => {
@@ -86,11 +109,13 @@ export const ReceptionForm = () => {
                   );
                 }}
               </Field>
-              <Field name="date" onBlurValidate={receptionType.shape.date}>
+              <Field<Date>
+                name="date"
+                onBlurValidate={receptionType.shape.date}>
                 {({ value, setValue, onBlur, errors }) => {
                   return (
-                    <div className=" space-y-2">
-                      <Label>تاريخ:</Label>
+                    <div className=" grid gap-y-2">
+                      <Label>تاريخ المراسلة:</Label>
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button
@@ -115,9 +140,6 @@ export const ReceptionForm = () => {
                           />
                         </PopoverContent>
                       </Popover>
-                      {errors.map((error) => (
-                        <p key={error}>{error}</p>
-                      ))}
                     </div>
                   );
                 }}
@@ -130,8 +152,8 @@ export const ReceptionForm = () => {
                     <div className=" space-y-2">
                       <Label>رقم وثيقة قانونية:</Label>
                       <Input
-                        value={value}
                         disabled={isSubmitting}
+                        value={value}
                         onBlur={onBlur}
                         onChange={(e) => setValue(e.target.value)}
                       />
@@ -148,19 +170,25 @@ export const ReceptionForm = () => {
                 {({ value, setValue, onBlur, errors }) => {
                   return (
                     <div className=" space-y-2">
-                      <Label>الصفة:</Label>
-                      <Select onValueChange={(value) => setValue(value)}>
+                      <Label>نوع الممثل:</Label>
+                      <Select
+                        defaultValue={value}
+                        onValueChange={(value) => {
+                          setValue(value);
+                          setSelectedGrades(value);
+                        }}>
                         <SelectTrigger disabled={isSubmitting}>
                           <SelectValue placeholder="اختيار" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectGroup>
-                            <SelectItem value={typePlaint.normalCen}>
-                              {typePlaint.normalCen}
-                            </SelectItem>
-                            <SelectItem value={typePlaint.publicService}>
-                              {typePlaint.publicService}
-                            </SelectItem>
+                            {SifatData.map((sifa, i) => {
+                              return (
+                                <SelectItem key={i} value={sifa.name}>
+                                  {sifa.name}
+                                </SelectItem>
+                              );
+                            })}
                           </SelectGroup>
                         </SelectContent>
                       </Select>
@@ -172,69 +200,29 @@ export const ReceptionForm = () => {
                 }}
               </Field>
               <Field<string>
-                // TODO: Add fieldtodo
-
-                name=""
-                onBlurValidate={z.string()}>
+                name="gradesType"
+                onBlurValidate={receptionType.shape.gradesType}>
                 {({ value, setValue, onBlur, errors }) => {
                   return (
                     <div className=" space-y-2">
-                      <Label>:</Label>
-                      <Select onValueChange={(value) => setValue(value)}>
+                      <Label>صفة الممثل:</Label>
+                      <Select
+                        defaultValue={value}
+                        onValueChange={(value) => {
+                          setValue(value);
+                        }}>
                         <SelectTrigger disabled={isSubmitting}>
                           <SelectValue placeholder="اختيار" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectGroup>
-                            <SelectItem value="القطاع الوزاري">
-                              القطاع الوزاري
-                            </SelectItem>
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
-                      {errors.map((error) => (
-                        <p key={error}>{error}</p>
-                      ))}
-                    </div>
-                  );
-                }}
-              </Field>
-              <Field<string>
-                name="note"
-                onBlurValidate={receptionType.shape.note}>
-                {({ value, setValue, onBlur, errors }) => {
-                  return (
-                    <div className=" space-y-2">
-                      <Label>الملاحضة:</Label>
-                      <Input
-                        value={value}
-                        disabled={isSubmitting}
-                        onBlur={onBlur}
-                        onChange={(e) => setValue(e.target.value)}
-                      />
-                      {errors.map((error) => (
-                        <p key={error}>{error}</p>
-                      ))}
-                    </div>
-                  );
-                }}
-              </Field>
-              <Field<string>
-                name="town"
-                onBlurValidate={receptionType.shape.town}>
-                {({ value, setValue, onBlur, errors }) => {
-                  return (
-                    <div className=" space-y-2">
-                      <Label>الدائرة:</Label>
-                      <Select onValueChange={(value) => setValue(value)}>
-                        <SelectTrigger disabled={isSubmitting}>
-                          <SelectValue placeholder="اختيار" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectGroup>
-                            <SelectItem value="القطاع الوزاري">
-                              القطاع الوزاري
-                            </SelectItem>
+                            {filteredGrades.map((association, i) => {
+                              return (
+                                <SelectItem key={i} value={association}>
+                                  {association}
+                                </SelectItem>
+                              );
+                            })}
                           </SelectGroup>
                         </SelectContent>
                       </Select>
@@ -251,52 +239,25 @@ export const ReceptionForm = () => {
                 {({ value, setValue, onBlur, errors }) => {
                   return (
                     <div className=" space-y-2">
-                      <Label>البلدية:</Label>
-                      <Select onValueChange={(value) => setValue(value)}>
-                        <SelectTrigger disabled={isSubmitting}>
-                          <SelectValue placeholder="اختيار" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectGroup>
-                            <SelectItem value="القطاع الوزاري">
-                              القطاع الوزاري
-                            </SelectItem>
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
-                      {errors.map((error) => (
-                        <p key={error}>{error}</p>
-                      ))}
-                    </div>
-                  );
-                }}
-              </Field>
-              <Field<boolean>
-                name="petitionHasFiled"
-                onBlurValidate={receptionType.shape.petitionHasFiled}>
-                {({ value, setValue, onBlur, errors }) => {
-                  return (
-                    <div className=" space-y-2">
-                      <Label> هل اودع عريضة ؟ </Label>
+                      <Label>الدائرة:</Label>
                       <Select
-                        onValueChange={(va) =>
-                          setValue(va === "true" ? true : false)
-                        }>
+                        defaultValue={value}
+                        onValueChange={(value) => {
+                          setValue(value);
+                          setSelectedDaira(value);
+                        }}>
                         <SelectTrigger disabled={isSubmitting}>
                           <SelectValue placeholder="اختيار" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectGroup>
-                            <SelectItem
-                              onClick={() => setValue(true)}
-                              value={"true"}>
-                              نعم
-                            </SelectItem>
-                            <SelectItem
-                              onClick={() => setValue(false)}
-                              value={"false"}>
-                              ﻻ
-                            </SelectItem>
+                            {dairaData.map((daira, i) => {
+                              return (
+                                <SelectItem key={i} value={daira.name}>
+                                  {daira.name}
+                                </SelectItem>
+                              );
+                            })}
                           </SelectGroup>
                         </SelectContent>
                       </Select>
@@ -308,21 +269,29 @@ export const ReceptionForm = () => {
                 }}
               </Field>
               <Field<string>
-                name="sector"
-                onBlurValidate={receptionType.shape.sector}>
+                name="town"
+                onBlurValidate={receptionType.shape.town}>
                 {({ value, setValue, onBlur, errors }) => {
                   return (
                     <div className=" space-y-2">
-                      <Label>القطاع الوزاري:</Label>
-                      <Select onValueChange={(value) => setValue(value)}>
+                      <Label>البلدية:</Label>
+                      <Select
+                        defaultValue={value}
+                        onValueChange={(value) => {
+                          setValue(value);
+                        }}>
                         <SelectTrigger disabled={isSubmitting}>
                           <SelectValue placeholder="اختيار" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectGroup>
-                            <SelectItem value="القطاع الوزاري">
-                              القطاع الوزاري
-                            </SelectItem>
+                            {filteredBaladiya.map((ba, i) => {
+                              return (
+                                <SelectItem key={i} value={ba}>
+                                  {ba}
+                                </SelectItem>
+                              );
+                            })}
                           </SelectGroup>
                         </SelectContent>
                       </Select>
@@ -333,22 +302,69 @@ export const ReceptionForm = () => {
                   );
                 }}
               </Field>
-              <Field<string>
+              <Field
+                name="ministry"
+                onBlurValidate={receptionType.shape.ministry}>
+                {({ value, setValue, onBlur, errors }) => {
+                  return (
+                    <div className=" space-y-2">
+                      <Label>الوزارة:</Label>
+                      <Select
+                        defaultValue={value}
+                        onValueChange={(value) => {
+                          setValue(value);
+                          setSelectedWizara(value);
+                        }}>
+                        <SelectTrigger disabled={isSubmitting}>
+                          <SelectValue placeholder="اختيار" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            {WissataTypeSchemadata.map((wizara, i) => {
+                              return (
+                                <SelectItem key={i} value={wizara.wizara}>
+                                  {wizara.wizara}
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                      {errors.map((error) => (
+                        <p key={error}>{error}</p>
+                      ))}
+                    </div>
+                  );
+                }}
+              </Field>
+              <Field
                 name="unstutation"
                 onBlurValidate={receptionType.shape.unstutation}>
                 {({ value, setValue, onBlur, errors }) => {
                   return (
                     <div className=" space-y-2">
                       <Label>المؤسسة:</Label>
-                      <Select onValueChange={(value) => setValue(value)}>
+                      <Select
+                        defaultValue={value}
+                        onValueChange={(value) => {
+                          setValue(value);
+                          setSelectedInstitutions(value);
+                        }}>
                         <SelectTrigger disabled={isSubmitting}>
                           <SelectValue placeholder="اختيار" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectGroup>
-                            <SelectItem value="القطاع الوزاري">
-                              القطاع الوزاري
-                            </SelectItem>
+                            {filteredInstitutions.length < 1 && (
+                              <SelectLabel>الرجاء اختر وزارة</SelectLabel>
+                            )}
+                            {filteredInstitutions.map((institution, i) => {
+                              return (
+                                <SelectItem key={i} value={institution.name}>
+                                  {institution.name}
+                                </SelectItem>
+                              );
+                            })}
                           </SelectGroup>
                         </SelectContent>
                       </Select>
@@ -360,24 +376,120 @@ export const ReceptionForm = () => {
                 }}
               </Field>
               <Field<string>
-                name="subject"
-                onBlurValidate={receptionType.shape.subject}>
+                name="typePlaint"
+                onBlurValidate={receptionType.shape.typePlaint}>
                 {({ value, setValue, onBlur, errors }) => {
                   return (
                     <div className=" space-y-2">
-                      <Label>الموضوع الخاص بالعريضة:</Label>
-                      <Select onValueChange={(value) => setValue(value)}>
+                      <Label>نوع العريضة:</Label>
+                      <Select
+                        defaultValue={value}
+                        onValueChange={(value) => {
+                          setValue(value);
+                          setSelectedTypePlaint(value);
+                        }}>
                         <SelectTrigger disabled={isSubmitting}>
                           <SelectValue placeholder="اختيار" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectGroup>
-                            <SelectItem value="القطاع الوزاري">
-                              القطاع الوزاري
-                            </SelectItem>
+                            {filteredTypePlaint.length < 1 && (
+                              <SelectLabel>الرجاء اختر مؤسسة</SelectLabel>
+                            )}
+                            {filteredTypePlaint.map((type, i) => {
+                              return (
+                                <SelectItem key={i} value={type.naw3arida}>
+                                  {type.naw3arida}
+                                </SelectItem>
+                              );
+                            })}
                           </SelectGroup>
                         </SelectContent>
                       </Select>
+                      {errors.map((error) => (
+                        <p key={error}>{error}</p>
+                      ))}
+                    </div>
+                  );
+                }}
+              </Field>
+              <Field
+                name="subjectPlaint"
+                onBlurValidate={receptionType.shape.subjectPlaint}>
+                {({ value, setValue, onBlur, errors }) => {
+                  return (
+                    <div className="  space-y-2">
+                      <Label>موضوع العريضة:</Label>
+
+                      <Select onValueChange={(value) => setValue(value)}>
+                        <SelectTrigger
+                          disabled={
+                            isSubmitting || filteredPlaints.length == 0
+                          }>
+                          <SelectValue
+                            className=" text-right"
+                            placeholder="اختيار "
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            {filteredPlaints.length < 1 && (
+                              <SelectLabel>الرجاء اختر نوع عريضة</SelectLabel>
+                            )}
+                            {filteredPlaints.map((plaint, i) => {
+                              return (
+                                <SelectItem key={i} value={plaint}>
+                                  {plaint}
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                      {errors.map((error) => (
+                        <p key={error}>{error}</p>
+                      ))}
+                    </div>
+                  );
+                }}
+              </Field>{" "}
+              <Field<string>
+                name="note"
+                onBlurValidate={receptionType.shape.note}>
+                {({ value, setValue, onBlur, errors }) => {
+                  return (
+                    <div className=" grid   gap-y-2">
+                      <Label>ملاحظة:</Label>
+                      <Input
+                        type="text"
+                        onChange={(e) => setValue(e.target.value)}
+                      />
+                    </div>
+                  );
+                }}
+              </Field>
+              <Field<boolean>
+                name="petitionHasFiled"
+                initialValue={false}
+                onBlurValidate={receptionType.shape.petitionHasFiled}>
+                {({ value, setValue, onBlur, errors }) => {
+                  return (
+                    <div className="  py-2">
+                      <div className="items-top flex gap-x-2">
+                        <Checkbox
+                          checked={value}
+                          onCheckedChange={() => setValue(!value)}
+                          id="terms1"
+                        />
+                        <div className="grid gap-1.5 leading-none">
+                          <label
+                            htmlFor="terms1"
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                            قام بايداع العريضة
+                          </label>
+                          <p className="text-sm text-muted-foreground">شؤس</p>
+                        </div>
+                      </div>
                       {errors.map((error) => (
                         <p key={error}>{error}</p>
                       ))}
@@ -387,15 +499,17 @@ export const ReceptionForm = () => {
               </Field>
             </div>
 
-            <Button disabled={!isValid || isSubmitting} type="submit">
-              {isSubmitting ? (
-                <>
+            {isSubmitting ? (
+              <>
+                <Button disabled={!isValid} type="button">
                   <Loader className=" animate-spin h-6 w-6" />
-                </>
-              ) : (
-                "حفظ"
-              )}
-            </Button>
+                </Button>
+              </>
+            ) : (
+              <Button disabled={!isValid} type="submit">
+                حفظ
+              </Button>
+            )}
           </form>
         )}
       </Form>

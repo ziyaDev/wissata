@@ -9,7 +9,7 @@ const siteNavigations = [
   },
   {
     label: "شكاوي",
-    link: "/dashboard/plaints",
+    link: "/dashboard/plaintes",
   },
   {
     label: "تقديم شكوى",

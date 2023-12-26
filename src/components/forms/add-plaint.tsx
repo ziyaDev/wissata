@@ -1,5 +1,11 @@
 "use client";
-import { Field, Form } from "houseform";
+import {
+  Field,
+  FieldArray,
+  FieldArrayItem,
+  Form,
+  useFormContext,
+} from "houseform";
 import { z, isValid } from "zod";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -21,9 +27,17 @@ import {
 import { useState } from "react";
 import axios from "axios";
 import { toast } from "../ui/use-toast";
-import { typePlaint } from "../selects";
-import { Textarea } from "../ui/textarea";
-import { WissataTypeSchemadata, receptionType, validateField } from "@/types";
+import {
+  SifatData,
+  WissataTypeSchemadata,
+  dairaData,
+  directionData,
+  plainteType,
+  sectoreData,
+} from "@/types";
+import { Card, CardContent, CardHeader } from "../ui/card";
+import { Separator } from "../ui/separator";
+import { useRouter } from "next/navigation";
 
 export const AddPlaintForm = () => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -34,7 +48,11 @@ export const AddPlaintForm = () => {
   const [selectedTypePlaint, setSelectedTypePlaint] = useState<string | null>(
     null
   );
-
+  const [selectedDaira, setSelectedDaira] = useState<string | null>(null);
+  const [selectedGrades, setSelectedGrades] = useState<string | null>(null);
+  const filteredGrades = SifatData.filter(
+    (item) => item.name === selectedGrades
+  ).flatMap((item) => item.association);
   const filteredInstitutions = WissataTypeSchemadata.filter(
     (item) => item.wizara === selectedWizara
   ).flatMap((item) => item.institution);
@@ -44,27 +62,16 @@ export const AddPlaintForm = () => {
   const filteredPlaints = filteredTypePlaint
     .filter((item) => item.naw3arida === selectedTypePlaint)
     .flatMap((item) => item.mawdo3s);
+  const filteredBaladiya = dairaData
+    .filter((item) => item.name === selectedDaira)
+    .flatMap((item) => item.baladiya);
+  const router = useRouter();
 
-  const handleSubmit = async (values: {
-    firstName: string;
-    lastName: string;
-    date: Date;
-    type: string;
-  }) => {
+  const handleSubmit = async (values: Zod.infer<typeof plainteType>) => {
     setIsSubmitting(true);
     try {
-      await axios.post("/api/reception", values).then((response) => {
-        if (response.status === 200) {
-          return toast({
-            title: "Succès",
-            description: "Votre demande est en cour de traitment",
-          });
-        } else if (response.status === 201) {
-          return toast({
-            title: "Succès",
-            description: "Vous avez été inscrit avec succès",
-          });
-        }
+      await axios.post("/api/plainte", values).then((response) => {
+        router.push("/dashboard/plaintes");
       });
     } catch (error) {
       setIsSubmitting(false);
@@ -79,21 +86,22 @@ export const AddPlaintForm = () => {
 
   return (
     <div className=" flex justify-center  h-full  ">
-      <Form<any>
+      <Form<Zod.infer<typeof plainteType>>
         onSubmit={(values) => {
           handleSubmit(values);
         }}>
-        {({ isValid, submit }) => (
+        {({ isValid, submit, errors }) => (
           <form
             className=" grid gap-6 w-full  max-w-6xl"
             onSubmit={(e) => {
               e.preventDefault();
               submit();
+              console.log(JSON.stringify(errors));
             }}>
-            <div className="  grid grid-cols-3 gap-y-4 gap-x-3">
+            <div className="  grid lg:grid-cols-3 gap-y-4 gap-x-3">
               <Field
                 name="fullName"
-                onBlurValidate={receptionType.shape.fullName}>
+                onBlurValidate={plainteType.shape.fullName}>
                 {({ value, setValue, onBlur, errors }) => {
                   return (
                     <div className=" space-y-2">
@@ -112,26 +120,30 @@ export const AddPlaintForm = () => {
                 }}
               </Field>
               <Field<string>
-                name="grades"
-                onBlurValidate={receptionType.shape.grades}>
+                name="city"
+                onBlurValidate={plainteType.shape.city}>
                 {({ value, setValue, onBlur, errors }) => {
                   return (
                     <div className=" space-y-2">
                       <Label>الدائرة:</Label>
                       <Select
                         defaultValue={value}
-                        onValueChange={(value) => setValue(value)}>
+                        onValueChange={(value) => {
+                          setValue(value);
+                          setSelectedDaira(value);
+                        }}>
                         <SelectTrigger disabled={isSubmitting}>
                           <SelectValue placeholder="اختيار" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectGroup>
-                            <SelectItem value={typePlaint.normalCen}>
-                              {typePlaint.normalCen}
-                            </SelectItem>
-                            <SelectItem value={typePlaint.publicService}>
-                              {typePlaint.publicService}
-                            </SelectItem>
+                            {dairaData.map((daira, i) => {
+                              return (
+                                <SelectItem key={i} value={daira.name}>
+                                  {daira.name}
+                                </SelectItem>
+                              );
+                            })}
                           </SelectGroup>
                         </SelectContent>
                       </Select>
@@ -143,18 +155,32 @@ export const AddPlaintForm = () => {
                 }}
               </Field>
               <Field<string>
-                name="docNumber"
-                onBlurValidate={receptionType.shape.docNumber}>
+                name="town"
+                onBlurValidate={plainteType.shape.town}>
                 {({ value, setValue, onBlur, errors }) => {
                   return (
                     <div className=" space-y-2">
                       <Label>البلدية:</Label>
-                      <Input
-                        value={value}
-                        disabled={isSubmitting}
-                        onBlur={onBlur}
-                        onChange={(e) => setValue(e.target.value)}
-                      />
+                      <Select
+                        defaultValue={value}
+                        onValueChange={(value) => {
+                          setValue(value);
+                        }}>
+                        <SelectTrigger disabled={isSubmitting}>
+                          <SelectValue placeholder="اختيار" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            {filteredBaladiya.map((ba, i) => {
+                              return (
+                                <SelectItem key={i} value={ba}>
+                                  {ba}
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
                       {errors.map((error) => (
                         <p key={error}>{error}</p>
                       ))}
@@ -162,7 +188,9 @@ export const AddPlaintForm = () => {
                   );
                 }}
               </Field>
-              <Field name="Ministry" onBlurValidate={z.string()}>
+              <Field
+                name="ministry"
+                onBlurValidate={plainteType.shape.ministry}>
                 {({ value, setValue, onBlur, errors }) => {
                   return (
                     <div className=" space-y-2">
@@ -195,7 +223,9 @@ export const AddPlaintForm = () => {
                   );
                 }}
               </Field>
-              <Field name="Entreprise" onBlurValidate={z.string()}>
+              <Field
+                name="unstutation"
+                onBlurValidate={plainteType.shape.unstutation}>
                 {({ value, setValue, onBlur, errors }) => {
                   return (
                     <div className=" space-y-2">
@@ -214,9 +244,9 @@ export const AddPlaintForm = () => {
                             {filteredInstitutions.length < 1 && (
                               <SelectLabel>الرجاء اختر وزارة</SelectLabel>
                             )}
-                            {filteredInstitutions.map((institution) => {
+                            {filteredInstitutions.map((institution, i) => {
                               return (
-                                <SelectItem value={institution.name}>
+                                <SelectItem key={i} value={institution.name}>
                                   {institution.name}
                                 </SelectItem>
                               );
@@ -232,10 +262,8 @@ export const AddPlaintForm = () => {
                 }}
               </Field>
               <Field<string>
-                // TODO: Add fieldtodo
-
-                name=""
-                onBlurValidate={z.string()}>
+                name="typePlaint"
+                onBlurValidate={plainteType.shape.typePlaint}>
                 {({ value, setValue, onBlur, errors }) => {
                   return (
                     <div className=" space-y-2">
@@ -254,9 +282,9 @@ export const AddPlaintForm = () => {
                             {filteredTypePlaint.length < 1 && (
                               <SelectLabel>الرجاء اختر مؤسسة</SelectLabel>
                             )}
-                            {filteredTypePlaint.map((type) => {
+                            {filteredTypePlaint.map((type, i) => {
                               return (
-                                <SelectItem value={type.naw3arida}>
+                                <SelectItem key={i} value={type.naw3arida}>
                                   {type.naw3arida}
                                 </SelectItem>
                               );
@@ -271,7 +299,9 @@ export const AddPlaintForm = () => {
                   );
                 }}
               </Field>
-              <Field name="content" onBlurValidate={z.string()}>
+              <Field
+                name="subjectPlaint"
+                onBlurValidate={plainteType.shape.subjectPlaint}>
                 {({ value, setValue, onBlur, errors }) => {
                   return (
                     <div className="  space-y-2">
@@ -292,9 +322,11 @@ export const AddPlaintForm = () => {
                             {filteredPlaints.length < 1 && (
                               <SelectLabel>الرجاء اختر نوع عريضة</SelectLabel>
                             )}
-                            {filteredPlaints.map((plaint) => {
+                            {filteredPlaints.map((plaint, i) => {
                               return (
-                                <SelectItem value={plaint}>{plaint}</SelectItem>
+                                <SelectItem key={i} value={plaint}>
+                                  {plaint}
+                                </SelectItem>
                               );
                             })}
                           </SelectGroup>
@@ -308,23 +340,30 @@ export const AddPlaintForm = () => {
                 }}
               </Field>
               <Field<string>
-                name="town"
-                onBlurValidate={receptionType.shape.town}>
+                name="grades"
+                onBlurValidate={plainteType.shape.grades}>
                 {({ value, setValue, onBlur, errors }) => {
                   return (
                     <div className=" space-y-2">
-                      <Label>الصفة:</Label>
+                      <Label>نوع الممثل:</Label>
                       <Select
                         defaultValue={value}
-                        onValueChange={(value) => setValue(value)}>
+                        onValueChange={(value) => {
+                          setValue(value);
+                          setSelectedGrades(value);
+                        }}>
                         <SelectTrigger disabled={isSubmitting}>
                           <SelectValue placeholder="اختيار" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectGroup>
-                            <SelectItem value="القطاع الوزاري">
-                              القطاع الوزاري
-                            </SelectItem>
+                            {SifatData.map((sifa, i) => {
+                              return (
+                                <SelectItem key={i} value={sifa.name}>
+                                  {sifa.name}
+                                </SelectItem>
+                              );
+                            })}
                           </SelectGroup>
                         </SelectContent>
                       </Select>
@@ -336,8 +375,42 @@ export const AddPlaintForm = () => {
                 }}
               </Field>
               <Field<string>
-                name="city"
-                onBlurValidate={receptionType.shape.city}>
+                name="gradesType"
+                onBlurValidate={plainteType.shape.gradesType}>
+                {({ value, setValue, onBlur, errors }) => {
+                  return (
+                    <div className=" space-y-2">
+                      <Label>صفة الممثل:</Label>
+                      <Select
+                        defaultValue={value}
+                        onValueChange={(value) => {
+                          setValue(value);
+                        }}>
+                        <SelectTrigger disabled={isSubmitting}>
+                          <SelectValue placeholder="اختيار" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            {filteredGrades.map((association, i) => {
+                              return (
+                                <SelectItem key={i} value={association}>
+                                  {association}
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                      {errors.map((error) => (
+                        <p key={error}>{error}</p>
+                      ))}
+                    </div>
+                  );
+                }}
+              </Field>
+              <Field<string>
+                name="sourcePlaint"
+                onBlurValidate={plainteType.shape.sourcePlaint}>
                 {({ value, setValue, onBlur, errors }) => {
                   return (
                     <div className=" space-y-2">
@@ -363,81 +436,10 @@ export const AddPlaintForm = () => {
                   );
                 }}
               </Field>
+
               <Field<string>
-                name="sector"
-                onBlurValidate={receptionType.shape.sector}>
-                {({ value, setValue, onBlur, errors }) => {
-                  return (
-                    <div className=" space-y-2">
-                      <Label>القطاع الوزاري:</Label>
-                      <Select
-                        defaultValue={value}
-                        onValueChange={(value) => setValue(value)}>
-                        <SelectTrigger disabled={isSubmitting}>
-                          <SelectValue placeholder="اختيار" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectGroup>
-                            <SelectItem value="القطاع الوزاري">
-                              القطاع الوزاري
-                            </SelectItem>
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
-                      {errors.map((error) => (
-                        <p key={error}>{error}</p>
-                      ))}
-                    </div>
-                  );
-                }}
-              </Field>
-              <Field<string>
-                name="unstutation"
-                onBlurValidate={receptionType.shape.unstutation}>
-                {({ value, setValue, onBlur, errors }) => {
-                  return (
-                    <div className=" space-y-2">
-                      <Label>نحو:</Label>
-                      <Select
-                        defaultValue={value}
-                        onValueChange={(value) => setValue(value)}>
-                        <SelectTrigger disabled={isSubmitting}>
-                          <SelectValue placeholder="اختيار" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectGroup>
-                            <SelectItem value="القطاع الوزاري">
-                              القطاع الوزاري
-                            </SelectItem>
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
-                      {errors.map((error) => (
-                        <p key={error}>{error}</p>
-                      ))}
-                    </div>
-                  );
-                }}
-              </Field>
-              <Field<string>
-                name="subject"
-                onBlurValidate={receptionType.shape.subject}>
-                {({ value, setValue, onBlur, errors }) => {
-                  return (
-                    <div className=" grid gap-y-2">
-                      <Label>الموضوع الخاص بالعريضة:</Label>
-                      <Input
-                        type="text"
-                        placeholder="موقع ملفات PDF"
-                        onChange={(e) => setValue(e.target.value)}
-                      />
-                    </div>
-                  );
-                }}
-              </Field>
-              <Field<string>
-                name="subject"
-                onBlurValidate={receptionType.shape.subject}>
+                name="correspondenceNumber"
+                onBlurValidate={plainteType.shape.correspondenceNumber}>
                 {({ value, setValue, onBlur, errors }) => {
                   return (
                     <div className=" grid gap-y-2">
@@ -451,8 +453,8 @@ export const AddPlaintForm = () => {
                 }}
               </Field>
               <Field<Date>
-                name="subject"
-                onBlurValidate={receptionType.shape.subject}>
+                name="correspondenceDate"
+                onBlurValidate={plainteType.shape.correspondenceDate}>
                 {({ value, setValue, onBlur, errors }) => {
                   return (
                     <div className=" grid gap-y-2">
@@ -484,14 +486,14 @@ export const AddPlaintForm = () => {
                     </div>
                   );
                 }}
-              </Field>{" "}
+              </Field>
               <Field<string>
-                name="subject"
-                onBlurValidate={receptionType.shape.subject}>
+                name="filesRelated"
+                onBlurValidate={plainteType.shape.filesRelated}>
                 {({ value, setValue, onBlur, errors }) => {
                   return (
                     <div className=" grid gap-y-2">
-                      <Label>الموضوع الخاص بالعريضة:</Label>
+                      <Label>الملفات الخاصة بالشكوى:</Label>
                       <Input
                         type="text"
                         placeholder="موقع ملفات PDF"
@@ -503,7 +505,42 @@ export const AddPlaintForm = () => {
               </Field>
             </div>
 
-            <Button disabled={!isValid || isSubmitting} type="submit">
+            <Card>
+              <Separator className=" mb-4 " />
+              <CardContent>
+                <FieldArray
+                  name="recipients"
+                  initialValue={[{ sector: "", reciption: "", town: "" }]}>
+                  {({ value, add, remove }) => (
+                    <div className=" grid gap-4">
+                      {value.map((data, index) => {
+                        return (
+                          <PlaintSentTo
+                            key={index}
+                            remove={remove}
+                            index={index}
+                          />
+                        );
+                      })}
+                      <Button
+                        variant={"outline"}
+                        type="button"
+                        onClick={() =>
+                          add({
+                            sector: "",
+                            reciption: "",
+                            town: "",
+                          })
+                        }>
+                        + اضافة مستلم
+                      </Button>
+                    </div>
+                  )}
+                </FieldArray>
+              </CardContent>
+            </Card>
+
+            <Button disabled={!isValid} type="submit">
               {isSubmitting ? (
                 <>
                   <Loader className=" animate-spin h-6 w-6" />
@@ -518,3 +555,198 @@ export const AddPlaintForm = () => {
     </div>
   );
 };
+
+const PlaintSentTo = ({
+  index,
+  remove,
+}: {
+  index: number;
+  remove: (index: number) => void;
+}) => {
+  const [selectedSecture, setSelectedSecture] = useState<string | null>(null);
+  const [selectedDaira, setSelectedDaira] = useState<string | null>(null);
+
+  const filteredBaladiya = dairaData
+    .filter((item) => item.name === selectedDaira)
+    .flatMap((item) => item.baladiya);
+
+  return (
+    <>
+      <div className=" space-y-4">
+        <div className=" flex  items-center justify-between">
+          <Label>المستلم رقم {index + 1} :</Label>
+          <Button
+            disabled={index === 0}
+            onClick={() => remove(index)}
+            variant={"outline"}>
+            حذف
+          </Button>
+        </div>
+        <Separator />
+        <div className="grid grid-cols-3 gap-x-4">
+          <FieldArrayItem<string>
+            name={`recipients[${index}].sector`}
+            key={`recipients[${index}].sector`}
+            onBlurValidate={plainteType.shape.recipients.element.shape.sector}>
+            {({ value, setValue, onBlur, errors }) => {
+              return (
+                <div className=" space-y-2">
+                  <Label>القطاع :</Label>
+                  <Select
+                    defaultValue={value}
+                    onValueChange={(value) => {
+                      setValue(value);
+                      setSelectedSecture(value);
+                    }}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="اختيار" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {sectoreData.map((sec, index) => {
+                          return (
+                            <SelectItem key={index} value={sec}>
+                              {sec}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                  {errors.map((error) => (
+                    <p key={error}>{error}</p>
+                  ))}
+                </div>
+              );
+            }}
+          </FieldArrayItem>
+          <FieldArrayItem<string>
+            name={`recipients[${index}].reciption`}
+            key={`recipients[${index}].reciption`}
+            onBlurValidate={
+              plainteType.shape.recipients.element.shape.reciption
+            }>
+            {({ value, setValue, onBlur, errors }) => {
+              return (
+                <div className=" space-y-2">
+                  <Label>نحو:</Label>
+                  <Select
+                    defaultValue={value}
+                    onValueChange={(value) => {
+                      setValue(value);
+                      if (selectedSecture === "دائرة") setSelectedDaira(value);
+                    }}>
+                    <SelectTrigger
+                      disabled={
+                        selectedSecture === "دائرة"
+                          ? false
+                          : selectedSecture === "مديرية"
+                          ? false
+                          : true
+                      }>
+                      <SelectValue placeholder="اختيار" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {selectedSecture === "دائرة" &&
+                          dairaData.map((daira, i) => {
+                            return (
+                              <SelectItem key={i} value={daira.name}>
+                                {daira.name}
+                              </SelectItem>
+                            );
+                          })}
+                        {selectedSecture === "مديرية" &&
+                          directionData.map((dir, i) => {
+                            return (
+                              <SelectItem key={i} value={dir}>
+                                {dir}
+                              </SelectItem>
+                            );
+                          })}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                  {errors.map((error) => (
+                    <p key={error}>{error}</p>
+                  ))}
+                </div>
+              );
+            }}
+          </FieldArrayItem>
+          {selectedSecture === "دائرة" && (
+            <FieldArrayItem<string>
+              preserveValue
+              name={`recipients[${index}].town`}
+              key={`recipients[${index}].town`}
+              onBlurValidate={plainteType.shape.recipients.element.shape.town}>
+              {({ value, setValue, onBlur, errors }) => {
+                return (
+                  <div className=" space-y-2">
+                    <Label>البلدية:</Label>
+                    <Select
+                      defaultValue={value}
+                      onValueChange={(value) => {
+                        setValue(value);
+                      }}>
+                      <SelectTrigger
+                        disabled={selectedSecture === "دائرة" ? false : true}>
+                        <SelectValue placeholder="اختيار" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          {filteredBaladiya.map((ba, i) => {
+                            return (
+                              <SelectItem key={i} value={ba}>
+                                {ba}
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                    {errors.map((error) => (
+                      <p key={error}>{error}</p>
+                    ))}
+                  </div>
+                );
+              }}
+            </FieldArrayItem>
+          )}
+          {/* {selectedSecture === "خارج اختصاص" && (
+            <FieldArrayItem<string>
+              name={`recipients[${index}].town`}
+              onBlurValidate={plainteType.shape.subject}>
+              {({ value, setValue, onBlur, errors }) => {
+                return (
+                  <div className=" space-y-2">
+                    <Label>للحفظ او الانتظار:</Label>
+                    <Select
+                      defaultValue={value}
+                      onValueChange={(value) => {
+                        setValue(value);
+                      }}>
+                      <SelectTrigger disabled={Form.isValidating}>
+                        <SelectValue placeholder="اختيار" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem value={"للحفظ"}>للحفظ</SelectItem>
+                          <SelectItem value={"للانتظار"}>للانتظار</SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                    {errors.map((error) => (
+                      <p key={error}>{error}</p>
+                    ))}
+                  </div>
+                );
+              }}
+            </FieldArrayItem>
+          )} */}
+        </div>
+      </div>
+    </>
+  );
+};
+

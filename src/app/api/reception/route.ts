@@ -62,6 +62,9 @@ export async function POST(request: Request) {
           id: reception.id,
         },
         data: {
+          petitionHasFiled: body.petitionHasFiled
+            ? body.petitionHasFiled
+            : undefined,
           visited: {
             createMany: {
               data: [

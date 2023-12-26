@@ -2,9 +2,7 @@ import { roles } from "@/utils/session";
 import { sessionOptions } from "@/utils/session-config";
 import { IronSessionData, getIronSession } from "iron-session";
 import { cookies } from "next/headers";
-import { z } from "zod";
 import { NextRequest, NextResponse } from "next/server";
-import { receptionType } from "@/types";
 import { prisma } from "../../../../../prisma/script";
 
 export async function GET(request: NextRequest) {
@@ -16,21 +14,17 @@ export async function GET(request: NextRequest) {
     return new NextResponse("Uauthenticated", { status: 401 });
   }
 
-  try {
-    const searchParam = request.nextUrl.searchParams.get("searchFullName");
-    const petitionHasFiledParam =
-      request.nextUrl.searchParams.get("petitionHasFiled");
+  const searchParam = request.nextUrl.searchParams.get("searchSNumber");
 
-    const data = await prisma.reception.findMany({
+  try {
+    const data = await prisma.plainte.findMany({
       where: {
-        fullName: {
+        correspondenceNumber: {
           contains: searchParam ? searchParam : undefined,
         },
-        petitionHasFiled: petitionHasFiledParam === "with" ? true : undefined,
-        submited: petitionHasFiledParam === "with" ? false : undefined,
       },
       include: {
-        visited: true,
+        recipients: true,
       },
       orderBy: {
         createdAt: "desc",
